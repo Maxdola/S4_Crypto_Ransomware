@@ -1,0 +1,5 @@
+rootProject.name = 'it_sicherheit_apl'
+include 'blockchain'
+include 'console'
+include 'report'
+

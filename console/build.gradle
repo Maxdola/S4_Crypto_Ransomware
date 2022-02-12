@@ -1,0 +1,31 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group 'de.dhbw'
+version '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies() {
+    //implementation project(":blockchain")
+    implementation files('../blockchain/build/libs/blockchain-1.0-SNAPSHOT.jar')
+}
+
+mainClassName = 'de.dhbw.ConsoleApplication'
+
+task fatJar(type: Jar, dependsOn: ':blockchain:fatJar') {
+    manifest {
+        attributes 'Main-Class': "${mainClassName}"
+    }
+    archiveBaseName = "console" //TODO here adjust the NAME
+    from {
+        project(":blockchain").configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}

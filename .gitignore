@@ -1,0 +1,6 @@
+# Project exclude paths
+/.gradle/
+/blockchain/build/
+/blockchain/build/classes/java/main/
+/console/build/
+/console/build/classes/java/main/
