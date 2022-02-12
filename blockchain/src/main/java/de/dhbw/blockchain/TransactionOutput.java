@@ -14,7 +14,8 @@ public class TransactionOutput {
     }
 
     public boolean isMine(PublicKey publicKey) {
-        return publicKey == recipient;
+        if (publicKey == null || recipient == null) return false;
+        return StringUtility.getStringFromKey(publicKey).equals(StringUtility.getStringFromKey(recipient));
     }
 
     public String getID() {

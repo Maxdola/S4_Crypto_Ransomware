@@ -1,7 +1,12 @@
 package de.dhbw.blockchain;
 
+import com.google.gson.GsonBuilder;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Path;
 import java.security.Security;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,9 +28,9 @@ public class BlockchainNetwork {
 
   private Block previousBlock;
 
-  private Wallet satoshiNakamoto;
+  public Wallet satoshiNakamoto;
 
-  public BlockchainNetwork() {
+  private BlockchainNetwork() {
     instance = this;
     Security.addProvider(new BouncyCastleProvider());
 
@@ -54,8 +59,6 @@ public class BlockchainNetwork {
     genesisBlock.addTransaction(this.genesisTransaction);
     addBlock(genesisBlock);
 
-    this.previousBlock = genesisBlock;
-
     //System.out.println("walletA (balance) | " + walletA.getBalance());
     //System.out.println("walletB (balance) | " + walletB.getBalance());
 
@@ -70,7 +73,7 @@ public class BlockchainNetwork {
     isChainValid();
   }
 
-  public void isChainValid() {
+  public boolean isChainValid() {
     Block currentBlock;
     Block previousBlock;
     String hashTarget = StringUtility.getDifficultyString(Configuration.instance.difficulty);
@@ -83,17 +86,17 @@ public class BlockchainNetwork {
 
       if (!currentBlock.getHash().equals(currentBlock.calculateHash())) {
         System.out.println(blueOutput("#current hashes not equal"));
-        return;
+        return false;
       }
 
       if (!previousBlock.getHash().equals(currentBlock.getPreviousHash())) {
         System.out.println(blueOutput("#trevious hashes not equal"));
-        return;
+        return false;
       }
 
       if (!currentBlock.getHash().substring(0, Configuration.instance.difficulty).equals(hashTarget)) {
         System.out.println(blueOutput("#block not mined"));
-        return;
+        return false;
       }
 
       TransactionOutput tempOutput;
@@ -102,12 +105,12 @@ public class BlockchainNetwork {
 
         if (currentTransaction.verifySignature()) {
           System.out.println(blueOutput("#Signature on de.dhbw.blockchain.Transaction(" + t + ") is Invalid"));
-          return;
+          return false;
         }
 
         if (currentTransaction.getInputsValue() != currentTransaction.getOutputsValue()) {
           System.out.println(blueOutput("#Inputs are not equal to oututs on de.dhbw.blockchain.Transaction(" + t + ")"));
-          return;
+          return false;
         }
 
         for (TransactionInput input : currentTransaction.getInputs()) {
@@ -115,12 +118,12 @@ public class BlockchainNetwork {
 
           if (tempOutput == null) {
             System.out.println(blueOutput("#referenced input on transaction(" + t + ") is missing"));
-            return;
+            return false;
           }
 
           if (input.getUTX0().getValue() != tempOutput.getValue()) {
             System.out.println(blueOutput("#referenced input on transaction(" + t + ") value invalid"));
-            return;
+            return false;
           }
 
           tempUTXOs.remove(input.getId());
@@ -132,16 +135,17 @@ public class BlockchainNetwork {
 
         if (currentTransaction.getOutputs().get(0).getRecipient() != currentTransaction.getRecipient()) {
           System.out.println(blueOutput("#transaction(" + t + ") output recipient is invalid"));
-          return;
+          return false;
         }
 
         if (currentTransaction.getOutputs().get(1).getRecipient() != currentTransaction.getSender()) {
           System.out.println(blueOutput("#transaction(" + t + ") output 'change' is not sender"));
-          return;
+          return false;
         }
       }
     }
     System.out.println(blueOutput("blockchain valid"));
+    return true;
   }
 
   public boolean buyBtc(Wallet wallet, double amount) {
@@ -166,9 +170,21 @@ public class BlockchainNetwork {
     Miner m = miners.get(ThreadLocalRandom.current().nextInt(miners.size()) % miners.size());
     newBlock.mineBlock(Configuration.instance.difficulty, m);
     this.blockchain.add(newBlock);
+    this.previousBlock = newBlock;
+
+    try {
+      File f = Path.of("blockchain.json").toAbsolutePath().toFile();
+      f.createNewFile();
+      FileWriter fw = new FileWriter(f);
+      new GsonBuilder().setPrettyPrinting().create().toJson(this, fw);
+      fw.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public static BlockchainNetwork getInstance() {
+    if (instance == null) instance = new BlockchainNetwork();
     return instance;
   }
 

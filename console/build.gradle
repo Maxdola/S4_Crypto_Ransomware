@@ -13,11 +13,12 @@ repositories {
 dependencies() {
     //implementation project(":blockchain")
     implementation files('../blockchain/build/libs/blockchain-1.0-SNAPSHOT.jar')
+    implementation files('../report/build/libs/reportGenerator-1.0-SNAPSHOT.jar')
 }
 
 mainClassName = 'de.dhbw.ConsoleApplication'
 
-task fatJar(type: Jar, dependsOn: ':blockchain:fatJar') {
+task fatJar(type: Jar, dependsOn: [':report:fatJar', ':blockchain:fatJar']) {
     manifest {
         attributes 'Main-Class': "${mainClassName}"
     }

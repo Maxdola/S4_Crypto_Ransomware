@@ -11,4 +11,27 @@ repositories {
 }
 
 dependencies {
+    implementation files('../blockchain/build/libs/blockchain-1.0-SNAPSHOT.jar')
+}
+
+task fatJar(type: Jar, dependsOn: [':blockchain:fatJar']) {
+    manifest {
+        attributes 'Main-Class': "${mainClassName}"
+    }
+    archiveBaseName = "reportGenerator" //TODO here adjust the NAME
+    from {
+        //configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
+}
+
+task fatReportJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': "${mainClassName}"
+    }
+    archiveBaseName = "reportGenerator" //TODO here adjust the NAME
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }

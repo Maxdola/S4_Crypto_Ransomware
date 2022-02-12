@@ -1,24 +1,52 @@
 plugins {
     id 'java'
     id 'application'
+    id 'signing'
 }
 
 group 'de.dhbw'
-version '1.0-SNAPSHOT'
+version ''
 
 repositories {
     mavenCentral()
 }
 
-dependencies {
-    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.8.1'
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.8.1'
+dependencies() {
+    //implementation project(":blockchain")
+    implementation files('./console/build/libs/console-1.0-SNAPSHOT.jar')
 }
 
-test {
-    useJUnitPlatform()
+//The final jar will be under /build/lib/report.jar
+//The Directory /build/lib/ must be present!
+task FINALBUILD(dependsOn: ":buildJar") {
+
+    def signdir  = new File("$buildDir/jars/signed")
+    signdir.mkdirs()
+
+    ant.signjar(
+            destDir: "${signdir.absolutePath}",
+            jar: 'build/libs/*.jar',
+            alias:'report',
+            storetype:"jks",
+            keystore:"certs/key.jks",
+            storepass:'123456',
+            verbose:true,
+            preservelastmodified:"true"
+    )
+
 }
 
-task buildJars(dependsOn: ':console:fatJar') {
+mainClassName = 'de.dhbw.ConsoleApplication'
 
+
+task buildJar(type: Jar, dependsOn: [':blockchain:fatJar', ':report:fatJar', ':console:fatJar']) {
+    manifest {
+        attributes 'Main-Class': "${mainClassName}"
+    }
+    archiveBaseName = "report" //TODO here adjust the NAME
+    from {
+        configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    with jar
+    exclude 'META-INF/*.RSA', 'META-INF/*.SF','META-INF/*.DSA'
 }
